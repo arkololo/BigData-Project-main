@@ -1,0 +1,46 @@
+services:
+  acquisition:
+    build:
+      context: ./acquisition
+    environment:
+      INPUT_DIR: /shared_data
+      OUTPUT_DIR: /shared_data
+      IMAGE_LIMIT: ${IMAGE_LIMIT:-100}
+      CANDIDATE_FACTOR: ${CANDIDATE_FACTOR:-1.5}
+      DOWNLOAD_WORKERS: ${DOWNLOAD_WORKERS:-16}
+    volumes:
+      - shared_data:/shared_data
+    restart: "no"
+
+  analysis:
+    build:
+      context: ./analysis
+    depends_on:
+      acquisition:
+        condition: service_completed_successfully
+    environment:
+      INPUT_DIR: /shared_data
+      OUTPUT_DIR: /shared_data
+      CLUSTER_K: ${CLUSTER_K:-8}
+    volumes:
+      - shared_data:/shared_data
+    restart: "no"
+
+  recommendation:
+    build:
+      context: ./recommandation
+    depends_on:
+      analysis:
+        condition: service_completed_successfully
+    environment:
+      INPUT_DIR: /shared_data
+      OUTPUT_DIR: /shared_data/recommandation
+      USER_LIMIT: ${USER_LIMIT:-1000}
+      RECO_PER_USER: ${RECO_PER_USER:-10}
+      SEED: ${SEED:-42}
+    volumes:
+      - shared_data:/shared_data
+    restart: "no"
+
+volumes:
+  shared_data:
